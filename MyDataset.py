@@ -9,8 +9,7 @@ import config
 # 定义数据预处理方式
 transform = transforms.Compose([
     transforms.RandomHorizontalFlip(),
-    transforms.RandomRotation(45),
-    transforms.RandomVerticalFlip(),
+    transforms.RandomRotation(15),
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
