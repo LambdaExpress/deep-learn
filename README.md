@@ -1,5 +1,5 @@
 # 数据集处理
-'''
+'''python
 mkdir dataset
 mkdir dataset/<labels>
 mkdir data
