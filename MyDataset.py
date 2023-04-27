@@ -4,6 +4,7 @@ import torch.optim as optim
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 from torch.utils.data import DataLoader
+import config
 
 # 定义数据预处理方式
 transform = transforms.Compose([
@@ -19,5 +20,5 @@ train_dataset = datasets.ImageFolder("data/train", transform=transform)
 test_dataset = datasets.ImageFolder("data/test", transform=transform)
 
 # 定义数据加载器
-train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True, pin_memory=True)
-test_loader = DataLoader(test_dataset, batch_size=8, pin_memory=True)
+train_loader = DataLoader(train_dataset, config.BATCH_SIZE, shuffle=True, pin_memory=True)
+test_loader = DataLoader(test_dataset, config.BATCH_SIZE, pin_memory=True)

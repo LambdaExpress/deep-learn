@@ -6,6 +6,7 @@ from ResNet18 import ResNet18
 from MyDataset import train_loader, test_loader
 import time
 from tqdm import tqdm
+import config
 
 # 定义训练函数
 def train(model : nn.Module, optimizer, criterion, train_loader):
@@ -50,7 +51,7 @@ model = ResNet(block, [3, 4, 6, 3], 3, 2)
 model = model.to(device)
 # model = ResNet18(2).to(device)
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=1e-3)
+optimizer = optim.Adam(model.parameters(), lr=config.LEARNING_RATE)
 
 from PIL import ImageFile 
 ImageFile.LOAD_TRUNCATED_IMAGES = True # 解决图片损坏问题
@@ -62,10 +63,9 @@ if fine_tuning:
 print(f'Fine Tuning : {fine_tuning}')
 
 # 训练模型
-num_epochs = 50
 t = time.time()
-for epoch in range(num_epochs):
+for epoch in range(config.EPOCH):
     train_loss, train_acc = train(model, optimizer, criterion, train_loader)
     test_loss, test_acc = test(model, criterion, test_loader)
-    print(f"Epoch {epoch+1}/{num_epochs} - Train Loss: {train_loss:.4f} - Train Acc: {train_acc:.4f} - Test Loss: {test_loss:.4f} - Test Acc: {test_acc:.4f} - Time: {time.time() - t:.2f}s")
+    print(f"Epoch {epoch+1}/{config.EPOCH} - Train Loss: {train_loss:.4f} - Train Acc: {train_acc:.4f} - Test Loss: {test_loss:.4f} - Test Acc: {test_acc:.4f} - Time: {time.time() - t:.2f}s")
     torch.save(model.state_dict(), f"checkpoint/ResNet50_Epoch_{epoch+1}.pth")
