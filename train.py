@@ -7,9 +7,10 @@ from MyDataset import train_loader, test_loader
 import time
 from tqdm import tqdm
 import config
+from torch.utils.tensorboard import SummaryWriter
 
 # 定义训练函数
-def train(model : nn.Module, optimizer, criterion, train_loader):
+def train(model : nn.Module, optimizer, criterion, train_loader, i):
     model.train() 
     running_loss = 0.0
     correct = 0.0
@@ -25,10 +26,12 @@ def train(model : nn.Module, optimizer, criterion, train_loader):
         running_loss += loss.item() * inputs.size(0) # 统计损失
     epoch_loss = running_loss / len(train_loader.dataset) # 计算平均损失 
     epoch_acc = correct.double() / len(train_loader.dataset) # 计算平均精度
+    writer.add_scalar('train_loss', epoch_loss, i)
+    writer.add_scalar('train_acc', epoch_acc, i)
     return epoch_loss, epoch_acc
 
 # 定义测试函数
-def test(model : nn.Module, criterion, test_loader):
+def test(model : nn.Module, criterion, test_loader, i):
     model.eval()
     running_loss = 0.0
     correct = 0
@@ -42,14 +45,16 @@ def test(model : nn.Module, criterion, test_loader):
             correct += torch.sum(preds == labels.data)
     epoch_loss = running_loss / len(test_loader.dataset)
     epoch_acc = correct.double() / len(test_loader.dataset)
+    writer.add_scalar('test_loss', epoch_loss, i)
+    writer.add_scalar('test_acc', epoch_acc, i)
     return epoch_loss, epoch_acc
 
 # 定义模型、损失函数和优化器
-torch.manual_seed(3407)
+writer = SummaryWriter()
+torch.cuda.manual_seed(3407)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = ResNet(block, [3, 4, 6, 3], 3, 2)
-model = model.to(device)
-# model = ResNet18(2).to(device)
+# model = ResNet(block, [3, 4, 6, 3], 3, 2).to(device)
+model = ResNet18(2).to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=config.LEARNING_RATE)
 
@@ -64,8 +69,10 @@ print(f'Fine Tuning : {fine_tuning}')
 
 # 训练模型
 t = time.time()
+i = 0
 for epoch in range(config.EPOCH):
-    train_loss, train_acc = train(model, optimizer, criterion, train_loader)
-    test_loss, test_acc = test(model, criterion, test_loader)
+    train_loss, train_acc = train(model, optimizer, criterion, train_loader, i)
+    test_loss, test_acc = test(model, criterion, test_loader, i)
     print(f"Epoch {epoch+1}/{config.EPOCH} - Train Loss: {train_loss:.4f} - Train Acc: {train_acc:.4f} - Test Loss: {test_loss:.4f} - Test Acc: {test_acc:.4f} - Time: {time.time() - t:.2f}s")
-    torch.save(model.state_dict(), f"checkpoint/ResNet50_Epoch_{epoch+1}.pth")
+    torch.save(model.state_dict(), f"checkpoint/ResNet18_Epoch_{epoch+1}.pth")
+writer.close()
