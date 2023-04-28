@@ -64,6 +64,7 @@ class ResNet18(nn.Module):
         self.blk8 = Resblk(512,512,1,1)
         #池化操作
         self.avgpool = nn.AdaptiveAvgPool2d(output_size=(1, 1))
+        self.sig = nn.Sigmoid()
         #全连接层
         self.fc = nn.Linear(512, self.classes) #这里的1000是原文中对应1000个类吧
  
@@ -102,5 +103,7 @@ class ResNet18(nn.Module):
         x = x.view(x.size(0),-1) #[512,1]
         #全连接层 512,1 -> 1,1000
         x = self.fc(x)
+        #激活函数
+        #x = self.sig(x)
          
         return x

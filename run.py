@@ -47,7 +47,7 @@ if __name__ == "__main__":
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
-    run = Run(ResNet18(2), ['bad', 'good'], r'checkpoint\ResNet18_Epoch_100.pth')
+    run = Run(ResNet18(2), ['bad', 'good'], r'checkpoint\ResNet18_Epoch_111.pth')
     run.eval()
     run.move(shutil.copy)
 

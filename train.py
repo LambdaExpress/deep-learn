@@ -8,6 +8,7 @@ import time
 from tqdm import tqdm
 import config
 from torch.utils.tensorboard import SummaryWriter
+import os
 
 # 定义训练函数
 def train(model : nn.Module, optimizer, criterion, train_loader, i):
@@ -50,13 +51,12 @@ def test(model : nn.Module, criterion, test_loader, i):
     return epoch_loss, epoch_acc
 
 # 定义模型、损失函数和优化器
-writer = SummaryWriter()
-torch.cuda.manual_seed(3407)
+writer = SummaryWriter('logs/ResNet18')
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # model = ResNet(block, [3, 4, 6, 3], 3, 2).to(device)
 model = ResNet18(2).to(device)
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=config.LEARNING_RATE)
+optimizer = optim.Adam(model.parameters(), lr=config.LEARNING_RATE, weight_decay=1.2e-4)
 
 from PIL import ImageFile 
 ImageFile.LOAD_TRUNCATED_IMAGES = True # 解决图片损坏问题
@@ -64,15 +64,19 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True # 解决图片损坏问题
 #fine-tuning
 fine_tuning = False
 if fine_tuning:
-    model.load_state_dict(torch.load(r"checkpoint/ft2.pth")) 
+    model.load_state_dict(torch.load(r"checkpoint/ResNet18_Epoch_94.pth")) 
 print(f'Fine Tuning : {fine_tuning}')
 
 # 训练模型
 t = time.time()
-i = 0
+if os.path.exists(config.LOGTXT_NAME):
+    os.remove(config.LOGTXT_NAME)
 for epoch in range(config.EPOCH):
-    train_loss, train_acc = train(model, optimizer, criterion, train_loader, i)
-    test_loss, test_acc = test(model, criterion, test_loader, i)
-    print(f"Epoch {epoch+1}/{config.EPOCH} - Train Loss: {train_loss:.4f} - Train Acc: {train_acc:.4f} - Test Loss: {test_loss:.4f} - Test Acc: {test_acc:.4f} - Time: {time.time() - t:.2f}s")
+    train_loss, train_acc = train(model, optimizer, criterion, train_loader, epoch)
+    test_loss, test_acc = test(model, criterion, test_loader, epoch)
+    log = f"Epoch {epoch+1}/{config.EPOCH} - Train Loss: {train_loss:.4f} - Train Acc: {train_acc:.4f} - Test Loss: {test_loss:.4f} - Test Acc: {test_acc:.4f} - Time: {time.time() - t:.2f}s"
+    with open(config.LOGTXT_NAME, 'a+') as f:
+        f.write(log + "\n")
+    print(log)
     torch.save(model.state_dict(), f"checkpoint/ResNet18_Epoch_{epoch+1}.pth")
 writer.close()

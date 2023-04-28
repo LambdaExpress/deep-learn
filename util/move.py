@@ -78,13 +78,13 @@ if __name__ == '__main__':
     for t in splitter.types:
         train_images = os.listdir(splitter.train_dirs[t])
         test_images = os.listdir(splitter.test_dirs[t])
-        for image in tqdm(train_images):
+        for image in tqdm(train_images, desc="Resizing train images"):
             image_path = os.path.join(splitter.train_dirs[t], image)
             img = splitter.resize(image_path)
             if img == None:
                 continue
             img.save(image_path)
-        for image in tqdm(test_images):
+        for image in tqdm(test_images, desc="Resizing test images"):
             image_path = os.path.join(splitter.test_dirs[t], image)
             img = splitter.resize(image_path)
             if img == None:
