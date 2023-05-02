@@ -47,6 +47,10 @@ class Run():
                 output_path = os.path.join(self.output_dir, label)
                 shutil.copy(os.path.join(self.input_dir, img_name), output_path)
 def sum(inputs, outputs, other_name = 'or'):
+
+    if len(outputs) <= 1:
+        raise ValueError('The number of output folders should be greater than 1.')
+
     os.makedirs(outputs, exist_ok=True)
     os.makedirs(os.path.join(outputs, other_name), exist_ok=True)
     # 定义一个用于存储相同文件的空列表
@@ -94,15 +98,15 @@ if __name__ == "__main__":
     os.makedirs(output_head, exist_ok=True)
     print(f'model_path_list : {model_path_list}, output_list : {output_list}')
 
-    # for i in tqdm(range(0, len(model_path_list)), desc='Running'):
-    #     run = Run(
-    #                 models.model(),\
-    #                 test_transform, \
-    #                 ['bad', 'good'], \
-    #                 model_path_list[i], \
-    #                 r'input', \
-    #                 output_list[i])
-    #     run.eval()
-    #     run.copy()
+    for i in tqdm(range(0, len(model_path_list)), desc='Running'):
+        run = Run(
+                    models.model(),\
+                    test_transform, \
+                    ['bad', 'good'], \
+                    model_path_list[i], \
+                    r'input', \
+                    output_list[i])
+        run.eval()
+        run.copy()
     sum(output_list, r'output.sum')
 

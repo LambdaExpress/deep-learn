@@ -45,7 +45,6 @@ class Spider(object):
             for o in original:
                 img_url_list.append(o)
         return img_url_list
-
 if __name__ == '__main__':
     input = 'input'
     os.makedirs(input, exist_ok=True)
