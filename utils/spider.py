@@ -1,6 +1,7 @@
 import requests
 from tqdm import tqdm
 import re
+import os
 
 class Spider(object):
     def __init__(self, session : requests.Session):
@@ -46,10 +47,12 @@ class Spider(object):
         return img_url_list
 
 if __name__ == '__main__':
+    input = 'input'
+    os.makedirs(input, exist_ok=True)
     spider = Spider(requests.Session())
     try:
         for i in tqdm(range(1, 11), desc="Total Progress"):
-            rank_url = f'https://www.pixiv.net/ranking.php?mode=monthly&content=illust&date=20220215&p={str(i)}&format=json'
+            rank_url = f'https://www.pixiv.net/ranking.php?mode=monthly&content=illust&date=20220307&p={str(i)}&format=json'
             work_url_head = r'https://www.pixiv.net/artworks/'  
             json = spider.get_web(rank_url).json()
             illust_id_list = spider.parse_json(json)
@@ -58,6 +61,6 @@ if __name__ == '__main__':
             artworks = spider.get_imgurl(illust_id_list)
             for artwork in tqdm(artworks, desc="Downloading", leave=False):
                 img = spider.get_web(artwork)
-                spider.save_img(img, f'input/{artwork.split("/")[-1]}')
+                spider.save_img(img, f'{input}/{artwork.split("/")[-1]}')
     except Exception as e:
         print(e)

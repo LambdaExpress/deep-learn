@@ -9,8 +9,8 @@ import models.resnet as models
 from MyDataset import test_transform
 import hashlib
 
-
 ImageFile.LOAD_TRUNCATED_IMAGES = True # 解决图片损坏问题
+
 class Run():
     def __init__(self, model, transform, classes, model_path, input_dir, output_dir):
         
@@ -61,11 +61,11 @@ def sum(inputs, outputs, other_name = 'or'):
             with open(file_path, 'rb') as f:
                 file_hash = hashlib.sha256(f.read()).hexdigest()
             # 检查文件在其他文件夹中是否存在，并且SHA256哈希值是否相同
-            is_exist = False
+            is_exist = True
             for input in inputs[1:]:
-                if os.path.exists(os.path.join(input + r'\\' + label, file)) and \
-                hashlib.sha256(open(os.path.join(input + r'\\' + label, file), 'rb').read()).hexdigest() == file_hash:
-                    is_exist = True
+                if not (os.path.exists(os.path.join(input + r'\\' + label, file)) and \
+                hashlib.sha256(open(os.path.join(input + r'\\' + label, file), 'rb').read()).hexdigest() == file_hash):
+                    is_exist = False
                     break
             if is_exist:
                 same_files[file] = label
@@ -94,15 +94,15 @@ if __name__ == "__main__":
     os.makedirs(output_head, exist_ok=True)
     print(f'model_path_list : {model_path_list}, output_list : {output_list}')
 
-    for i in tqdm(range(0, len(model_path_list)), desc='Running'):
-        run = Run(
-                    models.model(),\
-                    test_transform, \
-                    ['bad', 'good'], \
-                    model_path_list[i], \
-                    r'input', \
-                    output_list[i])
-        run.eval()
-        run.copy()
+    # for i in tqdm(range(0, len(model_path_list)), desc='Running'):
+    #     run = Run(
+    #                 models.model(),\
+    #                 test_transform, \
+    #                 ['bad', 'good'], \
+    #                 model_path_list[i], \
+    #                 r'input', \
+    #                 output_list[i])
+    #     run.eval()
+    #     run.copy()
     sum(output_list, r'output.sum')
 
