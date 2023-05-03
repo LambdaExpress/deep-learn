@@ -84,6 +84,8 @@ def sum(inputs, outputs, other_name = 'or'):
         for root, _, files in os.walk(intput):
             files = list(set(files) - set(same_files.keys()))
             for file in tqdm(files, desc='Copying other files', leave=False):
+                if os.path.exists(os.path.join(outputs + '\\' + other_name, file)):
+                    continue
                 shutil.copy2(os.path.join(root, file), os.path.join(outputs + '\\' + other_name, file))
 
 if __name__ == "__main__":

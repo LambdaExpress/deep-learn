@@ -3,6 +3,19 @@ from tqdm import tqdm
 import re
 import os
 import save_pid as save_pid
+
+from datetime import datetime, timedelta
+
+def date_range(start_date : list, days : int):
+    start_date = datetime(start_date[0], start_date[1], start_date[2])
+    end_date = start_date + timedelta(days = days - 1)
+
+    date_list = []
+    while start_date <= end_date:
+        date_list.append(start_date.strftime('%Y%m%d'))
+        start_date += timedelta(days=1)
+    return date_list
+
 class Spider(object):
     def __init__(self, session : requests.Session, save_pid_file):
         self.save_pid_list = []
@@ -66,7 +79,7 @@ if __name__ == '__main__':
     spider = Spider(requests.Session(), save_pid_file='pid.txt')
     try:
         for i in tqdm(range(1, 11), desc="Total Progress"):
-            rank_url = f'https://www.pixiv.net/ranking.php?mode=monthly&content=illust&date=20220302&p={str(i)}&format=json'
+            rank_url = f'https://www.pixiv.net/ranking.php?mode=monthly&content=illust&date=20211210&p={str(i)}&format=json'
             work_url_head = r'https://www.pixiv.net/artworks/'  
             json = spider.get_web(rank_url).json()
             illust_id_list = spider.parse_json(json)
