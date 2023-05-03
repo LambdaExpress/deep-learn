@@ -2,9 +2,15 @@ import requests
 from tqdm import tqdm
 import re
 import os
-
+import save_pid as save_pid
 class Spider(object):
-    def __init__(self, session : requests.Session):
+    def __init__(self, session : requests.Session, save_pid_file):
+        self.save_pid_list = []
+        with open(save_pid_file, 'r+') as f:
+            self.save_pid_list = f.readlines()
+        for i in range(0, len(self.save_pid_list)):
+            if self.save_pid_list[i].endswith('\n'):
+                self.save_pid_list[i] = self.save_pid_list[i].split('\n')[0]
         self.session = session
         self.proxies = {
             "http": "http://127.0.0.1:7890",
@@ -35,7 +41,10 @@ class Spider(object):
     def parse_json(self, json):
         illust_id_list = []
         for img in json['contents']:
-            illust_id_list.append(img['illust_id'])
+            pid = img['illust_id']
+            if self.in_saved_files(str(pid)):
+                continue
+            illust_id_list.append(pid)
         return illust_id_list
     def get_imgurl(self, illust_id_list):
         img_url_list = []
@@ -45,13 +54,19 @@ class Spider(object):
             for o in original:
                 img_url_list.append(o)
         return img_url_list
+    def in_saved_files(self, pid):
+        if pid in self.save_pid_list:
+            return True
+        return False
+
 if __name__ == '__main__':
     input = 'input'
     os.makedirs(input, exist_ok=True)
-    spider = Spider(requests.Session())
+    save_pid.run(['input', 'dataset'], 'pid.txt')
+    spider = Spider(requests.Session(), save_pid_file='pid.txt')
     try:
         for i in tqdm(range(1, 11), desc="Total Progress"):
-            rank_url = f'https://www.pixiv.net/ranking.php?mode=monthly&content=illust&date=20220307&p={str(i)}&format=json'
+            rank_url = f'https://www.pixiv.net/ranking.php?mode=monthly&content=illust&date=20220302&p={str(i)}&format=json'
             work_url_head = r'https://www.pixiv.net/artworks/'  
             json = spider.get_web(rank_url).json()
             illust_id_list = spider.parse_json(json)
@@ -59,7 +74,10 @@ if __name__ == '__main__':
                 illust_id_list[i] = work_url_head + str(illust_id_list[i])
             artworks = spider.get_imgurl(illust_id_list)
             for artwork in tqdm(artworks, desc="Downloading", leave=False):
-                img = spider.get_web(artwork)
-                spider.save_img(img, f'{input}/{artwork.split("/")[-1]}')
+                try:
+                    img = spider.get_web(artwork)
+                    spider.save_img(img, f'{input}/{artwork.split("/")[-1]}')
+                except Exception as e:
+                    print(e)
     except Exception as e:
         print(e)

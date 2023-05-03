@@ -98,7 +98,7 @@ if __name__ == "__main__":
     os.makedirs(output_head, exist_ok=True)
     print(f'model_path_list : {model_path_list}, output_list : {output_list}')
 
-    for i in tqdm(range(0, len(model_path_list)), desc='Running'):
+    for i in tqdm(range(0, len(model_path_list)), desc='Total Progress'):
         run = Run(
                     models.model(),\
                     test_transform, \
@@ -109,4 +109,3 @@ if __name__ == "__main__":
         run.eval()
         run.copy()
     sum(output_list, r'output.sum')
-

@@ -1,7 +1,6 @@
 import pandas as pd
 import sys
 import os
-
 # 从txt文件中读取数据
 with open('log.txt', 'r') as f:
     data = f.readlines()
