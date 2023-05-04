@@ -5,11 +5,10 @@ import shutil
 from tqdm import tqdm
 from PIL import ImageFile
 import torchvision.transforms as transforms
-import models.resnet as resnet
 from MyDataset import test_transform
 import hashlib
 import warnings
-
+from models import resnet18_with_softmax as resnet
 warnings.filterwarnings("ignore")
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -100,7 +99,7 @@ def sum(inputs, outputs, other_name='or'):
                 dst_file = os.path.join(outputs, other_name, file)
                 if not os.path.exists(dst_file):
                     shutil.copy2(os.path.join(root, file), dst_file)
-if __name__ == "__main__":
+def main():
     model_path_list = []
     output_list = []
     checkpoint_dir = 'checkpoint'
@@ -129,3 +128,6 @@ if __name__ == "__main__":
         run.eval()
         run.copy()
     # sum(output_list, r'output.sum')
+
+if __name__ == "__main__":
+    main()

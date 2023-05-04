@@ -6,7 +6,7 @@ import time
 from tqdm import tqdm
 import config
 from torch.utils.tensorboard import SummaryWriter
-import models.resnet as resnet
+from models import Resnet18WithSoftmax as resnet
 import os
 
 # 定义训练函数
