@@ -11,7 +11,15 @@ warnings.filterwarnings("ignore")
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class Run():
-    def __init__(self, model, transform, classes, model_path, input_dir, output_dir, threshold):
+    def __init__(
+            self, 
+            model, 
+            transform, 
+            classes, 
+            model_path, 
+            input_dir, 
+            output_dir, 
+            threshold):
         
         os.makedirs(output_dir, exist_ok=True)
         os.makedirs(input_dir, exist_ok=True)
@@ -72,13 +80,13 @@ def main():
 
     for i in range(len(model_path_list)):
         run = Run(
-            resnet.Resnet18WithSoftmax(),
-            test_transform,
-            classes,
-            model_path_list[i],
-            input_dir,
-            os.path.join(output_dir, output_list[i]),
-            threshold
+            model       =   resnet.Resnet18WithSoftmax(),
+            transform   =   test_transform,
+            classes     =   classes,
+            model_path  =   model_path_list[i],
+            input_dir   =   input_dir,
+            output_dir  =   os.path.join(output_dir, output_list[i]),
+            threshold   =   threshold
         )
         run.eval()
         run.copy()
