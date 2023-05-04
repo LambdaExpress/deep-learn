@@ -28,7 +28,7 @@ class Run():
         self.img_label = {}
 
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.model : torch.nn.Module = model.to(self.device)
+        self.model = model.to(self.device)
         self.model.load_state_dict(torch.load(model_path))
         self.model.eval()
     def eval(self):
@@ -36,11 +36,11 @@ class Run():
             pars = tqdm(self.input_img_list)
             for img_name in pars:
                 img = Image.open(os.path.join(self.input_dir,img_name))
-                pars.set_description(f"Processing {img_name}")
                 img = img.convert('RGB')
                 img = self.transform(img).to(self.device)
                 img = img.unsqueeze(0)
                 output = self.model(img)
+                pars.set_description(f"Processing {img_name} {output[0][1]:.3f}")
                 self.set_label(img_name, output, self.threshold)
     def copy(self):
             for value in set(self.img_label.values()):
@@ -49,7 +49,6 @@ class Run():
                 output_path = os.path.join(self.output_dir, label)
                 shutil.copy(os.path.join(self.input_dir, img_name), output_path)
     def set_label(self, img_name, output, threshold):
-        output = torch.softmax(output, dim=1)
         if output[0][1] >= threshold:
             self.img_label[img_name] = self.classes[1]
         else:
@@ -72,7 +71,6 @@ def sum(inputs, outputs, other_name='or'):
             file_path = os.path.join(root, file)
             with open(file_path, 'rb') as f:
                 file_hash = hashlib.sha256(f.read()).hexdigest()
-
             is_exist = True
             for input in inputs[1:]:
                 input_file_path = os.path.join(input, label, file)
@@ -114,7 +112,7 @@ if __name__ == "__main__":
         if output_file.endswith('.pth'):
             model_path_list.append(os.path.join(checkpoint_dir, output_file))
             output_name = os.path.splitext(output_file)[0]
-            output_list.append(os.path.join(output_dir, output_name))
+            output_list.append(output_name)
 
     print(f'model_path_list: {model_path_list}, output_list: {output_list}')
 
@@ -126,7 +124,7 @@ if __name__ == "__main__":
             model_path_list[i],
             'input',
             os.path.join(output_dir, output_list[i]),
-            0.8
+            0.99
         )
         run.eval()
         run.copy()
