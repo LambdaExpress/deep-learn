@@ -100,10 +100,14 @@ def sum(inputs, outputs, other_name='or'):
                 if not os.path.exists(dst_file):
                     shutil.copy2(os.path.join(root, file), dst_file)
 def main():
-    model_path_list = []
-    output_list = []
     checkpoint_dir = 'checkpoint'
     output_dir = 'output'
+    input_dir = 'input'
+    classes = ['bad', 'good']
+    threshold = 0.99
+    
+    model_path_list = []
+    output_list = []
     
     os.makedirs(output_dir, exist_ok=True)
 
@@ -119,11 +123,11 @@ def main():
         run = Run(
             resnet.Resnet18WithSoftmax(),
             test_transform,
-            ['bad', 'good'],
+            classes,
             model_path_list[i],
-            'input',
+            input_dir,
             os.path.join(output_dir, output_list[i]),
-            0.99
+            threshold
         )
         run.eval()
         run.copy()

@@ -9,8 +9,7 @@ from torch.utils.tensorboard import SummaryWriter
 from models import Resnet18WithSoftmax as resnet
 import os
 
-# 定义训练函数
-def train(model : nn.Module, optimizer, criterion, train_loader, i):
+def train(model : nn.Module, optimizer : optim.Optimizer, criterion, train_loader, i):
     model.train() 
     running_loss = 0.0
     correct = 0.0
@@ -32,7 +31,6 @@ def train(model : nn.Module, optimizer, criterion, train_loader, i):
     writer.add_scalar('train_acc', epoch_acc, i)
     return epoch_loss, epoch_acc
 
-# 定义测试函数
 def test(model : nn.Module, criterion, test_loader, i):
     model.eval()
     running_loss = 0.0
@@ -53,7 +51,6 @@ def test(model : nn.Module, criterion, test_loader, i):
     writer.add_scalar('test_acc', epoch_acc, i)
     return epoch_loss, epoch_acc
 
-# 定义模型、损失函数和优化器
 writer = SummaryWriter('logs/ResNet18')
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = resnet.Resnet18WithSoftmax().to(device)
@@ -61,15 +58,13 @@ criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=config.LEARNING_RATE, weight_decay=config.WEITHT_DECAY)
 
 from PIL import ImageFile 
-ImageFile.LOAD_TRUNCATED_IMAGES = True # 解决图片损坏问题
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-#fine-tuning
 fine_tuning = False
 if fine_tuning:
     model.load_state_dict(torch.load(r"checkpoint/ResNet18_Epoch_94.pth")) 
 print(f'Fine Tuning : {fine_tuning}')
 
-# 训练模型
 t = time.time()
 if os.path.exists(config.LOGTXT_NAME):
     os.remove(config.LOGTXT_NAME)
