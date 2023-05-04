@@ -79,7 +79,7 @@ if __name__ == '__main__':
     spider = Spider(requests.Session(), save_pid_file='pid.txt')
     try:
         for i in tqdm(range(1, 11), desc="Total Progress"):
-            rank_url = f'https://www.pixiv.net/ranking.php?mode=monthly&content=illust&date=20211123&p={str(i)}&format=json'
+            rank_url = f'https://www.pixiv.net/ranking.php?mode=monthly&content=illust&date=20211105&p={str(i)}&format=json'
             work_url_head = r'https://www.pixiv.net/artworks/'  
             json = spider.get_web(rank_url).json()
             illust_id_list = spider.parse_json(json)

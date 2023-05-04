@@ -6,7 +6,7 @@ import time
 from tqdm import tqdm
 import config
 from torch.utils.tensorboard import SummaryWriter
-import models.resnet as models
+import models.resnet as resnet
 import os
 
 # 定义训练函数
@@ -56,7 +56,7 @@ def test(model : nn.Module, criterion, test_loader, i):
 # 定义模型、损失函数和优化器
 writer = SummaryWriter('logs/ResNet18')
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = models.model().to(device)
+model = resnet.Resnet18WithSoftmax().to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=config.LEARNING_RATE, weight_decay=config.WEITHT_DECAY)
 
