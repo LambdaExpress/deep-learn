@@ -8,15 +8,18 @@ import torchvision.transforms as transforms
 import models.resnet as models
 from MyDataset import test_transform
 import hashlib
+import warnings
+warnings.filterwarnings("ignore")
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True # 解决图片损坏问题
 
 class Run():
-    def __init__(self, model, transform, classes, model_path, input_dir, output_dir):
+    def __init__(self, model, transform, classes, model_path, input_dir, output_dir, threshold):
         
         os.makedirs(output_dir, exist_ok=True)
         os.makedirs(input_dir, exist_ok=True)
 
+        self.threshold = threshold
         self.transform = transform
         self.input_dir = input_dir
         self.output_dir = output_dir
@@ -38,14 +41,19 @@ class Run():
                 img = self.transform(img).to(self.device)
                 img = img.unsqueeze(0)
                 output = self.model(img)
-                label = self.classes[torch.argmax(output).item()]
-                self.img_label[img_name] = label
+                self.set_label(img_name, output, self.threshold)
     def copy(self):
             for value in set(self.img_label.values()):
                 os.makedirs(os.path.join(self.output_dir, value), exist_ok=True)
             for img_name, label in self.img_label.items():
                 output_path = os.path.join(self.output_dir, label)
                 shutil.copy(os.path.join(self.input_dir, img_name), output_path)
+    def set_label(self, img_name, output, threshold):
+        output = torch.softmax(output, dim=1)
+        if output[0][1] >= threshold:
+            self.img_label[img_name] = self.classes[1]
+        else:
+            self.img_label[img_name] = self.classes[0]
 def sum(inputs, outputs, other_name = 'or'):
 
     if len(outputs) <= 1:
@@ -100,14 +108,15 @@ if __name__ == "__main__":
     os.makedirs(output_head, exist_ok=True)
     print(f'model_path_list : {model_path_list}, output_list : {output_list}')
 
-    for i in tqdm(range(0, len(model_path_list)), desc='Total Progress'):
+    for i in tqdm(range(0, len(output_list)), desc='Total Progress'):
         run = Run(
                     models.model(),\
                     test_transform, \
                     ['bad', 'good'], \
                     model_path_list[i], \
                     r'input', \
-                    output_list[i])
+                    output_list[i], \
+                    0.7)
         run.eval()
         run.copy()
     sum(output_list, r'output.sum')
