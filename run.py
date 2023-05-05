@@ -19,11 +19,13 @@ class Run():
             model_path, 
             input_dir, 
             output_dir, 
-            threshold):
+            threshold,
+            only_good):
         
         os.makedirs(output_dir, exist_ok=True)
         os.makedirs(input_dir, exist_ok=True)
 
+        self.only_good = only_good
         self.threshold = threshold
         self.transform = transform
         self.input_dir = input_dir
@@ -50,7 +52,9 @@ class Run():
     def copy(self):
             for value in set(self.img_label.values()):
                 os.makedirs(os.path.join(self.output_dir, value), exist_ok=True)
-            for img_name, label in self.img_label.items():
+            for img_name, label in tqdm(self.img_label.items(), desc='Copying'):
+                if self.only_good and label != self.classes[1]:
+                    continue
                 output_path = os.path.join(self.output_dir, label)
                 shutil.copy(os.path.join(self.input_dir, img_name), output_path)
     def set_label(self, img_name, output, threshold):
@@ -64,6 +68,7 @@ def main():
     input_dir = 'input'
     classes = ['bad', 'good']
     threshold = 0.99
+    only_good = True
     
     model_path_list = []
     output_list = []
@@ -86,7 +91,8 @@ def main():
             model_path  =   model_path_list[i],
             input_dir   =   input_dir,
             output_dir  =   os.path.join(output_dir, output_list[i]),
-            threshold   =   threshold
+            threshold   =   threshold,
+            only_good   =   only_good,
         )
         run.eval()
         run.copy()
