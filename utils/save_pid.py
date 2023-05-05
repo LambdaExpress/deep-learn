@@ -1,14 +1,14 @@
 import os
 from tqdm import tqdm
 
-def save_pid(input_dir, output_file):
+
+def add_pid(input_dir, pid_set : set):
     for _, _, files in os.walk(input_dir):
         for file in tqdm(files, desc='Saving pid', leave=False):
-            with open(output_file, 'a') as f:
-                f.writelines(file.split('.')[0].split('_')[0] + '\n')
-def run(input_dirs, output_file):
-    if os.path.exists(output_file):
-        os.remove(output_file)
+                pid_set.add(file.split('.')[0].split('_')[0])
+def run(input_dirs):
+    pid = set()
     for input_dir in input_dirs:
-        save_pid(input_dir, output_file)
+        add_pid(input_dir, pid)
+    return pid
 
