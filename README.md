@@ -8,7 +8,7 @@ python util/move.py
 ```
 
 # 训练&验证
--特别说明：config.py仅对train.py和MyDataset.py应用，对其他脚本无效。
+特别说明：config.py仅对train.py和MyDataset.py应用，对其他脚本无效。
 ```
 python train
 ```
