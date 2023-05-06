@@ -56,9 +56,10 @@ if __name__ == '__main__':
     pid_list = save_pid.run([input_dir, 'dataset'])
     spider = Spider(requests.Session(), pid_list=pid_list)
     date_generator = dg.DateGenerator([2020, 1, 1], [2020, 12, 31])
+    date_generator.shuffle()
     while True:
         try:
-            rank_date = date_generator()
+            rank_date = date_generator.get_date()
             desc = f"Date: {rank_date}"
             for page_num in tqdm(range(1, 11), desc=desc, leave=False):
                 rank_url = f"https://www.pixiv.net/ranking.php?mode=monthly&content=illust&date={rank_date}&p={page_num}&format=json"
