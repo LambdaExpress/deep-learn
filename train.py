@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from MyDataset import train_loader, test_loader
+from my_dataset import MyDataset
 import time
 from tqdm import tqdm
 import config
@@ -50,7 +50,7 @@ def test(model : nn.Module, criterion, test_loader, i):
     writer.add_scalar('test_loss', epoch_loss, i)
     writer.add_scalar('test_acc', epoch_acc, i)
     return epoch_loss, epoch_acc
-
+train_loader, test_loader = MyDataset().get_loader()
 writer = SummaryWriter('logs/ResNet18')
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = resnet.Resnet18WithSoftmax().to(device)
