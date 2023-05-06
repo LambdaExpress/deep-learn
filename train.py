@@ -6,7 +6,7 @@ import time
 from tqdm import tqdm
 import config
 from torch.utils.tensorboard import SummaryWriter
-from models import Resnet18WithSoftmax as resnet
+from models import resnet18_with_softmax as resnet
 import os
 
 def train(model : nn.Module, optimizer : optim.Optimizer, criterion, train_loader, i):
