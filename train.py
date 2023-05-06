@@ -24,7 +24,7 @@ def open_log_file(file_name):
         yield f
     f.close()
 
-def train_and_test(model, optimizer, criterion, train_loader, test_loader, epoch):
+def train_and_test(model : nn.Module, optimizer : optim.Optimizer, criterion, train_loader, test_loader, epoch):
     """
     Trains and tests the model for one epoch.
 
