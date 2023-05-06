@@ -5,3 +5,5 @@
 /output.sum
 /__pycache__
 /checkpoint
+/log.txt
+/data.xlsx
