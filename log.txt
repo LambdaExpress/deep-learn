@@ -34,3 +34,7 @@ Epoch 33/200 - Train Loss: 0.0372 - Train Acc: 0.9871 - Test Loss: 1.0184 - Test
 Epoch 34/200 - Train Loss: 0.0355 - Train Acc: 0.9877 - Test Loss: 1.0869 - Test Acc: 0.7565 - Time: 4311.40s
 Epoch 35/200 - Train Loss: 0.0356 - Train Acc: 0.9871 - Test Loss: 1.0907 - Test Acc: 0.7720 - Time: 4438.21s
 Epoch 36/200 - Train Loss: 0.0401 - Train Acc: 0.9864 - Test Loss: 1.0985 - Test Acc: 0.7643 - Time: 4564.86s
+Epoch 1/200 - Train Loss: 0.6284 - Train Acc: 0.6502 - Test Loss: 0.5957 - Test Acc: 0.6880 - Time: 27.08s
+Epoch 1/200 - Train Loss: 0.6159 - Train Acc: 0.6716 - Test Loss: 0.5759 - Test Acc: 0.7203 - Time: 28.03s
+Epoch 1/200 - Train Loss: 0.6193 - Train Acc: 0.6647 - Test Loss: 0.5811 - Test Acc: 0.7142 - Time: 28.86s
+Epoch 1/200 - Train Loss: 0.6282 - Train Acc: 0.6473 - Test Loss: 0.5849 - Test Acc: 0.7042 - Time: 27.08s
