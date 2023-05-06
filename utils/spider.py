@@ -2,7 +2,7 @@ import requests
 from tqdm import tqdm
 import re
 import os
-import save_pid as save_pid
+import pid_extractor as pe
 import date_generator as dg
 
 class Spider(object):
@@ -53,7 +53,7 @@ if __name__ == '__main__':
     input_dir = 'input'
     os.makedirs(input_dir, exist_ok=True)
 
-    pid_list = save_pid.run([input_dir, 'dataset'])
+    pid_list = pe.PidExtractor([input_dir, 'dataset']).get_pid_list()
     spider = Spider(requests.Session(), pid_list=pid_list)
     date_generator = dg.DateGenerator([2020, 1, 1], [2020, 12, 31])
     date_generator.shuffle()
