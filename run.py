@@ -4,7 +4,7 @@ import os
 import shutil
 from tqdm import tqdm
 from PIL import ImageFile
-from MyDataset import test_transform
+from my_dataset import MyDataset
 import warnings
 from models import resnet18_with_softmax as resnet
 warnings.filterwarnings("ignore")
@@ -69,7 +69,8 @@ def main():
     classes = ['bad', 'good']
     threshold = 0.99
     only_good = True
-    
+    _, test_transform = MyDataset().get_transforms()
+
     model_path_list = []
     output_list = []
 
