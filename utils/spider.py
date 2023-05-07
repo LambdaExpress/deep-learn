@@ -4,6 +4,7 @@ import re
 import os
 import pid_extractor as pe
 import date_generator as dg
+import threading
 
 class Spider(object):
     def __init__(self, session : requests.Session, pid_list : list):
@@ -32,9 +33,6 @@ class Spider(object):
         html = self.session.get(url, headers=self.headers, proxies=self.proxies)
         return html
 
-    def save_img(self, img, path):
-        with open(path, 'wb') as f:
-            f.write(img.content)
     def parse_json(self, json):
         illust_id_list = [img['illust_id'] for img in json['contents'] 
                           if not self.in_saved_files(str(img['illust_id']))]
@@ -48,6 +46,27 @@ class Spider(object):
             return True
         self.pid_list.add(pid)
         return False
+    def download(self, url, filename):
+
+        response = requests.get(url, stream=True, proxies=self.proxies, headers=self.headers)
+
+        total_size_in_bytes = int(response.headers.get('content-length', 0))
+        block_size = 1024
+        progress_bar = tqdm(total=total_size_in_bytes, 
+                            unit='iB', 
+                            unit_scale=True, 
+                            leave=False, 
+                            desc=f"Progress file: {os.path.split(filename)[-1]}")
+
+        with open(filename, 'wb') as file:
+            for data in response.iter_content(block_size):
+                progress_bar.update(len(data))
+                file.write(data)
+
+        progress_bar.close()
+
+        if total_size_in_bytes != 0 and progress_bar.n != total_size_in_bytes:
+            print("ERROR: Download incomplete!")
 
 if __name__ == '__main__':
     input_dir = 'input'
@@ -68,10 +87,14 @@ if __name__ == '__main__':
                 illust_id_list = spider.parse_json(rank_json)
                 illust_id_list = [work_url_head + str(illust_id) for illust_id in illust_id_list]
                 artworks = spider.get_imgurl(illust_id_list)
-                for artwork_url in tqdm(artworks, desc="Downloading", leave=False):
-                    img = spider.get_web(artwork_url)
+                threads = []
+                for artwork_url in artworks:
                     filename = os.path.join(input_dir, artwork_url.split("/")[-1])
-                    spider.save_img(img, filename)
+                    thread = threading.Thread(target=spider.download, args=(artwork_url, filename))
+                    threads.append(thread)
+                    thread.start()
+                for thread in threads:
+                    thread.join()
         except Exception as e:
             pass
         finally:
