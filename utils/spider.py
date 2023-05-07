@@ -38,8 +38,34 @@ class Spider(object):
                           if not self.in_saved_files(str(img['illust_id']))]
         return illust_id_list
     def get_imgurl(self, illust_id_list):
-        img_url_list = [o for artwork in tqdm(illust_id_list, desc="Getting img url", leave=False) 
-                            for o in re.findall(r'original":"(.*?)"', self.get_web(artwork).text)]
+        img_url_list = []
+        for artwork in tqdm(illust_id_list, desc="Getting img url", leave=False):
+            img_url = self.get_web(artwork).text
+            for o in re.findall(r'original":"(.*?)"', img_url):
+                img_url_list.append(o)
+        return img_url_list
+    def thread_get_imgurl(self, illust_id_list):
+        img_url_list = []
+        lock = threading.Lock()
+
+        def process_artwork(artwork):
+            img_url = self.get_web(artwork).text
+            for url in re.findall(r'original":"(.*?)"', img_url):
+                with lock:
+                    img_url_list.append(url)
+            pbar.update(1)
+
+        total_artworks = len(illust_id_list)
+        with tqdm(total=total_artworks, desc="Getting img url", leave=False) as pbar:
+            threads = []
+            for artwork in illust_id_list:
+                t = threading.Thread(target=process_artwork, args=(artwork,))
+                t.start()
+                threads.append(t)
+
+            for t in threads:
+                t.join()
+
         return img_url_list
     def in_saved_files(self, pid):
         if pid in self.pid_list:
@@ -66,7 +92,7 @@ class Spider(object):
         progress_bar.close()
 
         if total_size_in_bytes != 0 and progress_bar.n != total_size_in_bytes:
-            print("ERROR: Download incomplete!")
+            raise Exception("Download incomplete!")
 
 if __name__ == '__main__':
     input_dir = 'input'
@@ -86,7 +112,7 @@ if __name__ == '__main__':
                 rank_json = spider.get_web(rank_url).json()
                 illust_id_list = spider.parse_json(rank_json)
                 illust_id_list = [work_url_head + str(illust_id) for illust_id in illust_id_list]
-                artworks = spider.get_imgurl(illust_id_list)
+                artworks = spider.thread_get_imgurl(illust_id_list)
                 threads = []
                 for artwork_url in artworks:
                     filename = os.path.join(input_dir, artwork_url.split("/")[-1])
