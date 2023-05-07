@@ -5,6 +5,7 @@ import os
 import pid_extractor as pe
 import date_generator as dg
 import threading
+import concurrent.futures
 
 class Spider(object):
     def __init__(self, session : requests.Session, pid_list : list):
@@ -57,14 +58,14 @@ class Spider(object):
 
         total_artworks = len(illust_id_list)
         with tqdm(total=total_artworks, desc="Getting img url", leave=False) as pbar:
-            threads = []
-            for artwork in illust_id_list:
-                t = threading.Thread(target=process_artwork, args=(artwork,))
-                t.start()
-                threads.append(t)
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                futures = []
+                for artwork in illust_id_list:
+                    future = executor.submit(process_artwork, artwork)
+                    futures.append(future)
 
-            for t in threads:
-                t.join()
+                for future in concurrent.futures.as_completed(futures):
+                    future.result()
 
         return img_url_list
     def in_saved_files(self, pid):
@@ -93,6 +94,15 @@ class Spider(object):
 
         if total_size_in_bytes != 0 and progress_bar.n != total_size_in_bytes:
             raise Exception("Download incomplete!")
+    def thread_pool_download(self, artworks, input_dir):
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            futures = []
+            for artwork_url in artworks:
+                filename = os.path.join(input_dir, artwork_url.split("/")[-1])
+                future = executor.submit(self.download, artwork_url, filename)
+                futures.append(future)
+            for future in concurrent.futures.as_completed(futures):
+                future.result()
 
 if __name__ == '__main__':
     input_dir = 'input'
@@ -113,14 +123,7 @@ if __name__ == '__main__':
                 illust_id_list = spider.parse_json(rank_json)
                 illust_id_list = [work_url_head + str(illust_id) for illust_id in illust_id_list]
                 artworks = spider.thread_get_imgurl(illust_id_list)
-                threads = []
-                for artwork_url in artworks:
-                    filename = os.path.join(input_dir, artwork_url.split("/")[-1])
-                    thread = threading.Thread(target=spider.download, args=(artwork_url, filename))
-                    threads.append(thread)
-                    thread.start()
-                for thread in threads:
-                    thread.join()
+                spider.thread_pool_download(artworks, input_dir)
         except Exception as e:
             pass
         finally:
