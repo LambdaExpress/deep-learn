@@ -9,7 +9,7 @@ import concurrent.futures
 
 class Spider(object):
     def __init__(self, session : requests.Session, pid_list : list):
-        self.pid_list = set(pid_list)
+        self.pid_set = set(pid_list)
         self.session = session
         self.proxies = {
             "http": "http://127.0.0.1:7890",
@@ -31,37 +31,29 @@ class Spider(object):
             "x-requested-with": "XMLHttpRequest"
         }
     def get_web(self, url):
-        html = self.session.get(url, headers=self.headers, proxies=self.proxies)
-        return html
+        response = self.session.get(url, headers=self.headers, proxies=self.proxies)
+        return response
 
     def parse_json(self, json):
         illust_id_list = [img['illust_id'] for img in json['contents'] 
                           if not self.in_saved_files(str(img['illust_id']))]
         return illust_id_list
-    def get_imgurl(self, illust_id_list):
-        img_url_list = []
-        for artwork in tqdm(illust_id_list, desc="Getting img url", leave=False):
-            img_url = self.get_web(artwork).text
-            for o in re.findall(r'original":"(.*?)"', img_url):
-                img_url_list.append(o)
-        return img_url_list
-    def thread_get_imgurl(self, illust_id_list):
+    def __process_artwork(self, artwork : str, img_url_list : list, lock : threading.Lock, pbar : tqdm):
+        img_url = self.get_web(artwork).text
+        for url in re.findall(r'original":"(.*?)"', img_url):
+            with lock:
+                img_url_list.append(url)
+        pbar.update(1)
+    def thread_pool_get_imgurl(self, illust_id_list):
         img_url_list = []
         lock = threading.Lock()
-
-        def process_artwork(artwork):
-            img_url = self.get_web(artwork).text
-            for url in re.findall(r'original":"(.*?)"', img_url):
-                with lock:
-                    img_url_list.append(url)
-            pbar.update(1)
 
         total_artworks = len(illust_id_list)
         with tqdm(total=total_artworks, desc="Getting img url", leave=False) as pbar:
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 futures = []
                 for artwork in illust_id_list:
-                    future = executor.submit(process_artwork, artwork)
+                    future = executor.submit(self.__process_artwork, artwork, img_url_list , lock, pbar)
                     futures.append(future)
 
                 for future in concurrent.futures.as_completed(futures):
@@ -69,16 +61,16 @@ class Spider(object):
 
         return img_url_list
     def in_saved_files(self, pid):
-        if pid in self.pid_list:
+        if pid in self.pid_set:
             return True
-        self.pid_list.add(pid)
+        self.pid_set.add(pid)
         return False
     def download(self, url, filename):
 
         response = requests.get(url, stream=True, proxies=self.proxies, headers=self.headers)
 
         total_size_in_bytes = int(response.headers.get('content-length', 0))
-        block_size = 1024
+        block_size = 1024 * 512 # 512KB
         progress_bar = tqdm(total=total_size_in_bytes, 
                             unit='iB', 
                             unit_scale=True, 
@@ -91,7 +83,6 @@ class Spider(object):
                 file.write(data)
 
         progress_bar.close()
-
         if total_size_in_bytes != 0 and progress_bar.n != total_size_in_bytes:
             raise Exception("Download incomplete!")
     def thread_pool_download(self, artworks, input_dir):
@@ -122,7 +113,7 @@ if __name__ == '__main__':
                 rank_json = spider.get_web(rank_url).json()
                 illust_id_list = spider.parse_json(rank_json)
                 illust_id_list = [work_url_head + str(illust_id) for illust_id in illust_id_list]
-                artworks = spider.thread_get_imgurl(illust_id_list)
+                artworks = spider.thread_pool_get_imgurl(illust_id_list)
                 spider.thread_pool_download(artworks, input_dir)
         except Exception as e:
             pass
