@@ -9,10 +9,11 @@ import warnings
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models.resnet18_with_softmax import Resnet18WithSoftmax
 from my_dataset import MyDataset
+from pixiv_spider import PixivSpider
 warnings.filterwarnings("ignore")
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-class SpiderLike(Spider):
+class LikePixivSpider(PixivSpider):
     def __init__(self, 
                  session: requests.Session, 
                  model : torch.nn.Module, 
@@ -40,11 +41,11 @@ class SpiderLike(Spider):
         img.save(path)
 if __name__ == '__main__':
     _, transform = MyDataset().get_transforms()
-    spider = SpiderLike(session=requests.Session(), 
+    spider = LikePixivSpider(session=requests.Session(), 
                         model=Resnet18WithSoftmax(), 
                         model_path='checkpoint/ResNet18_Epoch_11.pth',
                         transform=transform)
-    response = spider.get_web(r'https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Nanshan_Stone_Carving%2C_2018-10-27_19.jpg/2560px-Nanshan_Stone_Carving%2C_2018-10-27_19.jpg')
+    response = spider.get(r'https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Nanshan_Stone_Carving%2C_2018-10-27_19.jpg/2560px-Nanshan_Stone_Carving%2C_2018-10-27_19.jpg')
     threshold = 0.99
     eval_result = spider.eval(response)
     print(eval_result)

@@ -42,13 +42,16 @@ class Run():
         with torch.no_grad():
             pars = tqdm(self.input_img_list)
             for img_name in pars:
-                img = Image.open(os.path.join(self.input_dir,img_name))
-                img = img.convert('RGB')
-                img = self.transform(img).to(self.device)
-                img = img.unsqueeze(0)
-                output = self.model(img)
-                pars.set_description(f"Processing {img_name} {output[0][1]:.3f}")
-                self.set_label(img_name, output, self.threshold)
+                try:
+                    img = Image.open(os.path.join(self.input_dir,img_name))
+                    img = img.convert('RGB')
+                    img = self.transform(img).to(self.device)
+                    img = img.unsqueeze(0)
+                    output = self.model(img)
+                    pars.set_description(f"Processing {img_name} {output[0][1]:.3f}")
+                    self.set_label(img_name, output, self.threshold)
+                except Exception as e:
+                    print(e)
     def copy(self):
             for value in set(self.img_label.values()):
                 os.makedirs(os.path.join(self.output_dir, value), exist_ok=True)

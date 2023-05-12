@@ -1,15 +1,15 @@
+import sys
 import requests
 from tqdm import tqdm
-import re
 import os
 import pid_extractor as pe
 import date_generator as dg
-import threading
 import concurrent.futures
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 
 class Spider(object):
-    def __init__(self, session : requests.Session, pid_list : list):
-        self.pid_set = set(pid_list)
+    def __init__(self, session : requests.Session):
         self.session = session
         self.proxies = {
             "http": "http://127.0.0.1:7890",
@@ -30,92 +30,33 @@ class Spider(object):
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.48",
             "x-requested-with": "XMLHttpRequest"
         }
-    def get_web(self, url):
+    def get(self, url : str) -> requests.Response:
         response = self.session.get(url, headers=self.headers, proxies=self.proxies)
         return response
-
-    def parse_json(self, json):
-        illust_id_list = [img['illust_id'] for img in json['contents'] 
-                          if not self.in_saved_files(str(img['illust_id']))]
-        return illust_id_list
-    def __process_artwork(self, artwork : str, img_url_list : list, lock : threading.Lock, pbar : tqdm):
-        img_url = self.get_web(artwork).text
-        for url in re.findall(r'original":"(.*?)"', img_url):
-            with lock:
-                img_url_list.append(url)
-        pbar.update(1)
-    def thread_pool_get_imgurl(self, illust_id_list):
-        img_url_list = []
-        lock = threading.Lock()
-
-        total_artworks = len(illust_id_list)
-        with tqdm(total=total_artworks, desc="Getting img url", leave=False) as pbar:
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                futures = []
-                for artwork in illust_id_list:
-                    future = executor.submit(self.__process_artwork, artwork, img_url_list , lock, pbar)
-                    futures.append(future)
-
-                for future in concurrent.futures.as_completed(futures):
-                    future.result()
-
-        return img_url_list
-    def in_saved_files(self, pid):
-        if pid in self.pid_set:
-            return True
-        self.pid_set.add(pid)
-        return False
-    def download(self, url, filename):
-
+    
+    def download(self, url : str, file_path : str) -> None:
         response = requests.get(url, stream=True, proxies=self.proxies, headers=self.headers)
-
         total_size_in_bytes = int(response.headers.get('content-length', 0))
-        block_size = 1024 * 512 # 512KB
+        block_size = 1024 * 16  # 16 Kibibytes
         progress_bar = tqdm(total=total_size_in_bytes, 
                             unit='iB', 
                             unit_scale=True, 
                             leave=False, 
-                            desc=f"Progress file: {os.path.split(filename)[-1]}")
+                            desc=f"Progress file: {os.path.split(file_path)[-1]}")
 
-        with open(filename, 'wb') as file:
+        with open(file_path, 'wb') as file:
             for data in response.iter_content(block_size):
                 progress_bar.update(len(data))
                 file.write(data)
 
-        progress_bar.close()
         if total_size_in_bytes != 0 and progress_bar.n != total_size_in_bytes:
             raise Exception("Download incomplete!")
-    def thread_pool_download(self, artworks, input_dir):
+    def thread_pool_download(self, urls : list, output_dir : str):
         with concurrent.futures.ThreadPoolExecutor() as executor:
             futures = []
-            for artwork_url in artworks:
-                filename = os.path.join(input_dir, artwork_url.split("/")[-1])
-                future = executor.submit(self.download, artwork_url, filename)
+            for url in urls:
+                file_path = os.path.join(output_dir, url.split("/")[-1])
+                future = executor.submit(self.download, url, file_path)
                 futures.append(future)
             for future in concurrent.futures.as_completed(futures):
                 future.result()
-
-if __name__ == '__main__':
-    input_dir = 'input'
-    os.makedirs(input_dir, exist_ok=True)
-
-    pid_list = pe.PidExtractor([input_dir, 'dataset']).get_pid_list()
-    spider = Spider(requests.Session(), pid_list=pid_list)
-    date_generator = dg.DateGenerator([2020, 1, 1], [2020, 12, 31])
-    date_generator.shuffle()
-    while True:
-        try:
-            rank_date = date_generator.get_date()
-            desc = f"Date: {rank_date}"
-            for page_num in tqdm(range(1, 11), desc=desc, leave=False):
-                rank_url = f"https://www.pixiv.net/ranking.php?mode=monthly&content=illust&date={rank_date}&p={page_num}&format=json"
-                work_url_head = r"https://www.pixiv.net/artworks/"
-                rank_json = spider.get_web(rank_url).json()
-                illust_id_list = spider.parse_json(rank_json)
-                illust_id_list = [work_url_head + str(illust_id) for illust_id in illust_id_list]
-                artworks = spider.thread_pool_get_imgurl(illust_id_list)
-                spider.thread_pool_download(artworks, input_dir)
-        except Exception as e:
-            pass
-        finally:
-            date_generator.next()
