@@ -48,10 +48,10 @@ class Run():
                     img = self.transform(img).to(self.device)
                     img = img.unsqueeze(0)
                     output = self.model(img)
-                    pars.set_description(f"Processing {img_name} {output[0][1]:.3f}")
+                    pars.set_description(f"Processing {img_name.split('.')[0]} {output[0][1]:.3f}")
                     self.set_label(img_name, output, self.threshold)
                 except Exception as e:
-                    print(e)
+                    pass
     def copy(self):
             for value in set(self.img_label.values()):
                 os.makedirs(os.path.join(self.output_dir, value), exist_ok=True)
@@ -68,7 +68,7 @@ class Run():
 def main():
     checkpoint_dir = 'checkpoint'
     output_dir = 'output'
-    input_dir = 'input'
+    input_dir = r'gelbooru\komeiji_koishi'
     classes = ['bad', 'good']
     threshold = 0.99
     only_good = True

@@ -13,13 +13,12 @@ from pixiv_spider import PixivSpider
 warnings.filterwarnings("ignore")
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-class LikePixivSpider(PixivSpider):
-    def __init__(self, 
-                 session: requests.Session, 
+class Likepider(Spider):
+    def __init__(self,  
                  model : torch.nn.Module, 
                  model_path: str, 
                  transform):
-        super().__init__(session, [])
+        super().__init__()
         self.transform = transform
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.model = model.to(self.device)
@@ -41,7 +40,7 @@ class LikePixivSpider(PixivSpider):
         img.save(path)
 if __name__ == '__main__':
     _, transform = MyDataset().get_transforms()
-    spider = LikePixivSpider(session=requests.Session(), 
+    spider = Likepider(session=requests.Session(), 
                         model=Resnet18WithSoftmax(), 
                         model_path='checkpoint/ResNet18_Epoch_11.pth',
                         transform=transform)

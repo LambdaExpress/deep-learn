@@ -12,8 +12,8 @@ import pid_extractor as pe
 import date_generator as dg
 
 class PixivSpider(Spider):
-    def __init__(self, session : requests.Session, pid_list : list):
-        super().__init__(session)
+    def __init__(self, pid_list : list):
+        super().__init__()
         self.pid_set = set(pid_list)
 
     def parse_json(self, json):
@@ -51,7 +51,7 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
 
     pid_list = pe.PidExtractor([output_dir, 'dataset']).get_pid_list()
-    spider = PixivSpider(requests.Session(), pid_list=pid_list)
+    spider = PixivSpider(pid_list)
     date_generator = dg.DateGenerator([2020, 1, 1], [2020, 12, 31])
     date_generator.shuffle()
     while True:
