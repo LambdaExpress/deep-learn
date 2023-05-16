@@ -46,29 +46,74 @@ class PixivSpider(Spider):
             return True
         self.pid_set.add(pid)
         return False
+    def get_page_byuser(self, user_id: str, include_manga=False):
+        result = []
+        url = f'https://www.pixiv.net/ajax/user/{user_id}/profile/all'
+        response = self.get(url)
+        page_urls = response.json()['body']
+        result.extend(list(page_urls['illusts'].keys()))
+        
+        if include_manga:
+            result.extend(list(page_urls['manga'].keys()))
+        
+        return result
+    def get_imgurl_bypage(self, page_url : list):
+        img_urls = []
+        response = self.get(f'https://www.pixiv.net/ajax/illust/{page_url}/pages')
+        body = response.json()['body']
+        for item in body:
+            url = item['urls']['original']
+            ProcessLookupError
+            img_urls.append(url)
+        return img_urls
+    def thread_pool_imgurls_bypage(self, page_urls):
+        total_img_urls = []
+        total_pages = len(page_urls)
+        with tqdm(total=total_pages, desc="Getting img url", leave=False) as pbar:
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                futures = []
+                for page_url in page_urls:
+                    future = executor.submit(self.get_imgurl_bypage, page_url)
+                    futures.append(future)
+
+                for future in concurrent.futures.as_completed(futures):
+                    img_urls = future.result()
+                    list_len = len(img_urls)
+                    if list_len > 1:
+                        pbar.total += list_len - 1
+                    pbar.update(list_len)
+                    total_img_urls.extend(img_urls)
+        return total_img_urls
 def main():
-    output_dir = 'input'
+    root_dir = 'pixiv'
+    user_id = '59269150'
+    include_manga = False
+    output_dir = os.path.join(root_dir, user_id)
     os.makedirs(output_dir, exist_ok=True)
 
     pid_list = pe.PidExtractor([output_dir, 'dataset']).get_pid_list()
     spider = PixivSpider(pid_list)
     date_generator = dg.DateGenerator([2020, 1, 1], [2020, 12, 31])
     date_generator.shuffle()
-    while True:
-        try:
-            rank_date = date_generator.get_date()
-            desc = f"Date: {rank_date}"
-            for page_num in tqdm(range(1, 11), desc=desc, leave=False):
-                rank_url = f"https://www.pixiv.net/ranking.php?mode=monthly&content=illust&date={rank_date}&p={page_num}&format=json"
-                work_url_head = r"https://www.pixiv.net/artworks/"
-                rank_json = spider.get(rank_url).json()
-                illust_id_list = spider.parse_json(rank_json)
-                illust_id_list = [work_url_head + str(illust_id) for illust_id in illust_id_list]
-                artworks = spider.thread_pool_get_imgurl(illust_id_list)
-                spider.thread_pool_download(artworks, output_dir)
-        except Exception as e:
-            pass
-        finally:
-            date_generator.next()
+    page_urls = spider.get_page_byuser(user_id, include_manga)
+    img_urls = spider.thread_pool_imgurls_bypage(page_urls)
+    pbar = tqdm(total=len(img_urls), desc="Downloading")
+    spider.thread_pool_download(img_urls, output_dir, pbar=pbar)
+    # while True:
+    #     try:
+    #         rank_date = date_generator.get_date()
+    #         desc = f"Date: {rank_date}"
+    #         for page_num in tqdm(range(1, 11), desc=desc, leave=False):
+    #             rank_url = f"https://www.pixiv.net/ranking.php?mode=monthly&content=illust&date={rank_date}&p={page_num}&format=json"
+    #             work_url_head = r"https://www.pixiv.net/artworks/"
+    #             rank_json = spider.get(rank_url).json()
+    #             illust_id_list = spider.parse_json(rank_json)
+    #             illust_id_list = [work_url_head + str(illust_id) for illust_id in illust_id_list]
+    #             artworks = spider.thread_pool_get_imgurl(illust_id_list)
+    #             spider.thread_pool_download(artworks, output_dir)
+    #     except Exception as e:
+    #         pass
+    #     finally:
+    #         date_generator.next()
 if __name__ == '__main__':
     main()

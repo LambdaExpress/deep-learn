@@ -68,9 +68,9 @@ class Run():
 def main():
     checkpoint_dir = 'checkpoint'
     output_dir = 'output'
-    input_dir = r'gelbooru\komeiji_koishi'
+    input_dir = r'pixiv\59269150'
     classes = ['bad', 'good']
-    threshold = 0.99
+    threshold = 0.9
     only_good = True
     _, test_transform = MyDataset().get_transforms()
 

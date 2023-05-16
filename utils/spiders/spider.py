@@ -54,6 +54,9 @@ class Spider(object):
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = [executor.submit(self.download, url, os.path.join(output_dir, fn_filename(url)), block_size, timeout) for url in urls]
             for future in concurrent.futures.as_completed(futures):
-                future.result()
+                try:
+                    future.result()
+                except Exception:
+                    pass
                 if pbar is not None:
                     pbar.update(1)
