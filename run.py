@@ -68,7 +68,7 @@ class Run():
 def main():
     checkpoint_dir = 'checkpoint'
     output_dir = 'output'
-    input_dir = r'pixiv\59269150'
+    input_dir = r'pixiv\17674896'
     classes = ['bad', 'good']
     threshold = 0.9
     only_good = True
