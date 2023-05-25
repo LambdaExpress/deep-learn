@@ -25,11 +25,15 @@ class MyDataset:
         # 加载数据集
         self.train_dataset = datasets.ImageFolder("data/train", transform=self.train_transform)
         self.test_dataset = datasets.ImageFolder("data/test", transform=self.test_transform)
+        self.unlabeled_dataset = datasets.ImageFolder('data/unlabeled', transform=self.train_transform)
 
         # 定义数据加载器
         self.train_loader = DataLoader(self.train_dataset, config.BATCH_SIZE, shuffle=True, pin_memory=True)
-        self.test_loader = DataLoader(self.test_dataset, config.BATCH_SIZE, pin_memory=True)
+        self.test_loader = DataLoader(self.test_dataset, config.BATCH_SIZE, shuffle=True, pin_memory=True)
+        self.unlabeled_loader = DataLoader(self.unlabeled_dataset, config.BATCH_SIZE, shuffle=True,pin_memory=True)
     def get_loader(self):
         return self.train_loader, self.test_loader
     def get_transforms(self):
         return self.train_transform, self.test_transform
+    def get_unlabeled_loader(self):
+        return self.unlabeled_loader

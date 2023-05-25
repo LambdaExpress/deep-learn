@@ -68,10 +68,10 @@ class Run():
 def main():
     checkpoint_dir = 'checkpoint'
     output_dir = 'output'
-    input_dir = r'pixiv\17674896'
+    input_dir = r'pixiv\bookmark_76021323'
     classes = ['bad', 'good']
     threshold = 0.9
-    only_good = True
+    only_good = False
     _, test_transform = MyDataset().get_transforms()
 
     model_path_list = []

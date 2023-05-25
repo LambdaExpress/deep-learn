@@ -26,6 +26,7 @@ class PixivSpider(Spider):
         result = []
         url = f'https://www.pixiv.net/ajax/user/{user_id}/profile/all'
         response = self.get(url)
+        response.raise_for_status()
         page_urls = response.json()['body']
         result.extend(list(page_urls['illusts'].keys()))
         
@@ -87,7 +88,7 @@ class PixivSpider(Spider):
         return total_num
 def main_download_bybookmark():
     root_dir = 'pixiv'
-    user_id = '3411789'
+    user_id = '76021323'
     bookmark_name = f'bookmark_{user_id}'
     offset = 0
     limit = 100
@@ -108,8 +109,8 @@ def main_download_bybookmark():
         spider.thread_pool_download(illust_id_list, output_dir, pbar=pbar)
         offset += limit
 def main_download_byuser():
-    root_dir = 'pixiv'
-    user_id = '15759864'
+    root_dir = 'pixiv' 
+    user_id = '35313648'
     include_manga = False
     output_dir = os.path.join(root_dir, user_id)
     os.makedirs(output_dir, exist_ok=True)
@@ -117,9 +118,12 @@ def main_download_byuser():
     spider = PixivSpider([])
     page_urls = spider.get_page_byuser(user_id, include_manga)
     img_urls = spider.thread_pool_imgurls_bypage(page_urls, False)
-    pbar = tqdm(total=len(img_urls), desc="Downloading")
-    spider.thread_pool_download(img_urls, output_dir, pbar=pbar)
-    
+    with tqdm(total=len(img_urls), desc="Downloading") as pbar:
+        spider.thread_pool_download(img_urls, output_dir, pbar=pbar)
+
+    os.system(f'python C:\\Users\\LambdaExpress\\Desktop\\image\\deepbooru_txt.py --path "{os.path.abspath(output_dir)}"')
+    os.system('cls')
+    os.startfile(output_dir)
 def main_download_byrank():
     output_dir = 'input'
     os.makedirs(output_dir, exist_ok=True)
