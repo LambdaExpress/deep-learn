@@ -42,13 +42,16 @@ class Run():
         with torch.no_grad():
             pars = tqdm(self.input_img_list)
             for img_name in pars:
-                img = Image.open(os.path.join(self.input_dir,img_name))
-                img = img.convert('RGB')
-                img = self.transform(img).to(self.device)
-                img = img.unsqueeze(0)
-                output = self.model(img)
-                pars.set_description(f"Processing {img_name} {output[0][1]:.3f}")
-                self.set_label(img_name, output, self.threshold)
+                try:
+                    img = Image.open(os.path.join(self.input_dir,img_name))
+                    img = img.convert('RGB')
+                    img = self.transform(img).to(self.device)
+                    img = img.unsqueeze(0)
+                    output = self.model(img)
+                    pars.set_description(f"Processing {img_name.split('.')[0]} {output[0][1]:.3f}")
+                    self.set_label(img_name, output, self.threshold)
+                except Exception as e:
+                    pass
     def copy(self):
             for value in set(self.img_label.values()):
                 os.makedirs(os.path.join(self.output_dir, value), exist_ok=True)
@@ -65,10 +68,10 @@ class Run():
 def main():
     checkpoint_dir = 'checkpoint'
     output_dir = 'output'
-    input_dir = 'input'
+    input_dir = r'pixiv\bookmark_76021323'
     classes = ['bad', 'good']
-    threshold = 0.99
-    only_good = True
+    threshold = 0.9
+    only_good = False
     _, test_transform = MyDataset().get_transforms()
 
     model_path_list = []
