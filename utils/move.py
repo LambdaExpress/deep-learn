@@ -33,12 +33,13 @@ class ImageSplitter:
         except:
             pass
     def split_images(self):
-        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor, tqdm(desc='image') as pbar:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor, tqdm(total = 0, desc='image') as pbar:
             futures = []
             for t in tqdm(self.types, desc="Splitting"):
                 images = os.listdir(os.path.join(self.data_dir, t))
                 test_images = random.sample(images, int(len(images) * self.split_ratio))
                 train_images = [i for i in images if i not in test_images]
+                pbar.total += len(images)
                 for image in test_images:
                     src_path = os.path.join(self.data_dir, t, image)
                     dst_path = os.path.join(self.test_dirs[t], image)

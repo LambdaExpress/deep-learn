@@ -110,7 +110,7 @@ def main_download_bybookmark():
         offset += limit
 def main_download_byuser():
     root_dir = 'pixiv' 
-    user_id = '35313648'
+    user_id = '16582456'
     include_manga = False
     output_dir = os.path.join(root_dir, user_id)
     os.makedirs(output_dir, exist_ok=True)
@@ -121,8 +121,8 @@ def main_download_byuser():
     with tqdm(total=len(img_urls), desc="Downloading") as pbar:
         spider.thread_pool_download(img_urls, output_dir, pbar=pbar)
 
-    os.system(f'python C:\\Users\\LambdaExpress\\Desktop\\image\\deepbooru_txt.py --path "{os.path.abspath(output_dir)}"')
-    os.system('cls')
+    # os.system(f'python C:\\Users\\LambdaExpress\\Desktop\\image\\deepbooru_txt.py --path "{os.path.abspath(output_dir)}"')
+    # os.system('cls')
     os.startfile(output_dir)
 def main_download_byrank():
     output_dir = 'input'
