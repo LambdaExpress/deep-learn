@@ -78,6 +78,6 @@ if __name__ == '__main__':
     split_ratio = 0.225
 
     splitter = ImageSplitter(data_dir, train_dir, test_dir, split_ratio, ['bad', 'good'])
-    splitter.copy('input', 'data/unlabeled')
-    #splitter.clear_images()
-    #splitter.split_images()
+    # splitter.copy('input', 'data/unlabeled')
+    splitter.clear_images()
+    splitter.split_images()
