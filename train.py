@@ -7,8 +7,9 @@ import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 from PIL import ImageFile
 from contextlib import contextmanager
-from my_dataset import MyDataset
+from my_dataset import MyDataset, UnlabeledDataset
 from models import resnet18_with_softmax as resnet
+from models import resnet18_with_sigmoid as resnet1
 import config
 from tqdm import tqdm
 
@@ -23,8 +24,9 @@ def open_log_file(file_name):
     with open(file_name, 'a+') as f:
         yield f
     f.close()
-def train_and_test1(model: nn.Module, optimizer: optim.Optimizer, criterion, train_loader, test_loader, unlabeled_loader, epoch):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+def train_and_test_with_sigmoid(model : nn.Module, optimizer : optim.Optimizer, criterion, train_loader, test_loader, epoch):
+    device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
     model.train()
     train_loss = 0
     train_correct = 0
@@ -34,36 +36,20 @@ def train_and_test1(model: nn.Module, optimizer: optim.Optimizer, criterion, tra
         inputs, labels = inputs.to(device), labels.to(device)
         optimizer.zero_grad()
         outputs = model(inputs)
+        outputs = outputs.view(-1, 1)  # 调整输出形状为(batch_size, 1)
+        labels = labels.float().view(-1, 1)  # 调整标签形状为(batch_size, 1)，并转换为浮点型
         loss = criterion(outputs, labels)
         pars.set_description(f"Epoch:{epoch + 1} Training Loss {loss.item():.4f}")
         loss.backward()
         optimizer.step()
         train_loss += loss.item()
-        _, predicted = outputs.max(1)
+        predicted = (outputs > 0.5).float()  # 将输出转换为二进制类别预测
         train_total += labels.size(0)
         train_correct += predicted.eq(labels).sum().item()
 
-    # unlabeled data training
-    model.eval()
-    with torch.no_grad():
-        pars = tqdm(unlabeled_loader, leave=False)
-        for inputs, _ in pars:
-            inputs = inputs.to(device)
-            outputs = model(inputs)
-            pseudo_labels = outputs.argmax(dim=1)
-            unlabeled_targets = pseudo_labels.detach()
-            optimizer.zero_grad()
-            outputs = model(inputs)
-            loss = criterion(outputs, unlabeled_targets)
-            loss.backward()
-            optimizer.step()
-
-    # calculate training accuracy and loss
-    model.train()
     train_loss /= len(train_loader)
     train_acc = train_correct / train_total
 
-    # calculate testing accuracy and loss
     model.eval()
     test_loss = 0
     test_correct = 0
@@ -72,20 +58,22 @@ def train_and_test1(model: nn.Module, optimizer: optim.Optimizer, criterion, tra
         pars = tqdm(test_loader, leave=False)
         for inputs, labels in pars:
             inputs, labels = inputs.to(device), labels.to(device)
-            outputs = model(inputs)
+            outputs : torch.Tensor = model(inputs)
+            outputs = outputs.view(-1, 1)  # 调整输出形状为(batch_size, 1)
+            labels = labels.float().view(-1, 1)  # 调整标签形状为(batch_size, 1)，并转换为浮点型
             loss = criterion(outputs, labels)
             pars.set_description(f"Epoch:{epoch + 1} Testing Loss {loss.item():.4f}")
             test_loss += loss.item()
-            _, predicted = outputs.max(1)
+            predicted = (outputs > 0.5).float()  # 将输出转换为二进制类别预测
             test_total += labels.size(0)
             test_correct += predicted.eq(labels).sum().item()
 
-    test_loss /= len(test_loader)
-    test_acc = test_correct / test_total
+        test_loss /= len(test_loader)
+        test_acc = test_correct / test_total
 
-    return train_loss, train_acc, test_loss, test_acc
+        return train_loss, train_acc, test_loss, test_acc
 
-def train_and_test(model : nn.Module, optimizer : optim.Optimizer, criterion, train_loader, test_loader, epoch):
+def train_and_test_with_softmax(model : nn.Module, optimizer : optim.Optimizer, criterion, train_loader, test_loader, epoch):
     """
     Trains and tests the model for one epoch.
 
@@ -145,10 +133,13 @@ def train_and_test(model : nn.Module, optimizer : optim.Optimizer, criterion, tr
 
 def main():
     train_loader, test_loader = MyDataset().get_loader()
+    # unlabeled_loader = UnlabeledDataset().get_loader()
     writer = SummaryWriter('logs/ResNet18')
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = resnet.Resnet18WithSoftmax().to(device)
-    criterion = nn.CrossEntropyLoss()
+    model = resnet1.Resnet18WithSigmoid().to(device)
+    criterion = nn.BCELoss()
+    # model = resnet.Resnet18WithSoftmax().to(device)
+    # criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=config.LEARNING_RATE, weight_decay=config.WEITHT_DECAY)
     t = time.time()
     checkpoint_dir = 'checkpoint'
@@ -159,7 +150,7 @@ def main():
     print(f'Fine Tuning : {fine_tuning}')
 
     for epoch in range(config.EPOCH):
-        train_loss, train_acc, test_loss, test_acc = train_and_test(model, optimizer, criterion, train_loader, test_loader, epoch)
+        train_loss, train_acc, test_loss, test_acc = train_and_test_with_sigmoid(model, optimizer, criterion, train_loader, test_loader, epoch)
         log = f"Epoch {epoch+1}/{config.EPOCH} - Train Loss: {train_loss:.4f} - Train Acc: {train_acc:.4f} - Test Loss: {test_loss:.4f} - Test Acc: {test_acc:.4f} - Time: {time.time() - t:.2f}s"
         print(log)
         with open_log_file(config.LOGTXT_NAME) as f:
@@ -171,7 +162,7 @@ def main():
         writer.add_scalar('Test Accuracy', test_acc, epoch)
 
         os.makedirs(checkpoint_dir, exist_ok=True)
-        torch.save(model.state_dict(), os.path.join(checkpoint_dir,  f'ResNet18_Epoch_{epoch+1}.pth'))
+        torch.save(model.state_dict(), os.path.join(checkpoint_dir,  f'New_ResNet18_Epoch_{epoch+1}.pth'))
 
     writer.close()
 

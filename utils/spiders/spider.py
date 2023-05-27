@@ -3,7 +3,6 @@ import requests
 from tqdm import tqdm
 import os
 import concurrent.futures
-from typing import Union
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from typing import Callable
@@ -35,23 +34,38 @@ class Spider(object):
         try:
             response = requests.get(url, stream=True, proxies=self.proxies, headers=self.headers, timeout=timeout)
             total_size_in_bytes = int(response.headers.get('content-length', 0))
-            with open(file_path, 'wb') as file, tqdm(total=total_size_in_bytes, unit='iB', unit_scale=True, leave=False, desc=f"Downloading : {os.path.split(file_path)[-1]}") as progress_bar:
+            with open(file_path, 'wb') as file, \
+                tqdm(total=total_size_in_bytes, unit='iB', unit_scale=True, leave=False, desc=f"Downloading : {os.path.split(file_path)[-1]}") as progress_bar:
                 for data in response.iter_content(block_size):
                     progress_bar.update(len(data))
                     file.write(data)
                 if total_size_in_bytes != 0 and progress_bar.n != total_size_in_bytes:
-                    raise AssertionError(f'Download failed due to network error')
+                    raise requests.HTTPError(f'Download failed due to network error')
         except Exception:
             self.download(url, file_path, block_size, timeout, max_call_limit - 1)
 
-    def thread_pool_download(self, urls: list, output_dir: str, *, fn_filename : Callable[[str], str] =lambda url: url.split("/")[-1], max_workers: int = None, pbar: tqdm = None, block_size: int = 1024 * 16, timeout = 15, max_call_limit=5) -> None:
+    def thread_pool_download(
+            self, 
+            urls: list, 
+            output_dir: str, 
+            *, 
+            fn_filename : Callable[[str], str] =lambda url: url.split("/")[-1], 
+            max_workers: int = None, 
+            pbar: tqdm = None, 
+            block_size: int = 1024 * 16, 
+            timeout = 15, 
+            max_call_limit=5
+        ) -> None:
+        
         os.makedirs(output_dir, exist_ok=True)
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = [executor.submit(self.download, url, os.path.join(output_dir, fn_filename(url)), block_size, timeout, max_call_limit) for url in urls]
+            futures = [executor.submit(self.download, url, os.path.join(output_dir, fn_filename(url)), block_size, timeout, max_call_limit) 
+                       for url in urls]
             for future in concurrent.futures.as_completed(futures):
                 try:
                     future.result()
                 except Exception as e:
                     print(e)
-                if pbar is not None:
-                    pbar.update(1)
+                finally:
+                    if pbar is not None:
+                        pbar.update(1)
