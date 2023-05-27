@@ -10,10 +10,6 @@ import os
 class GelbooruSpider(Spider):
     def __init__(self, headers, output_dir):
         self.headers = headers
-        self.proxies = {
-            "http": "http://127.0.0.1:7890",
-            "https": "http://127.0.0.1:7890",
-        }
         self.imgids = self.get_allimgid(output_dir)
         super().__init__(headers=headers)
 

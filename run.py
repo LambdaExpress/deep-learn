@@ -1,3 +1,4 @@
+import threading
 from PIL import Image
 import torch    
 import os
@@ -6,6 +7,7 @@ from tqdm import tqdm
 from PIL import ImageFile
 from my_dataset import MyDataset
 import warnings
+import concurrent.futures
 from models import resnet18_with_softmax as resnet
 warnings.filterwarnings("ignore")
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -38,20 +40,25 @@ class Run():
         self.model = model.to(self.device)
         self.model.load_state_dict(torch.load(model_path))
         self.model.eval()
-    def eval(self):
-        with torch.no_grad():
-            pars = tqdm(self.input_img_list)
-            for img_name in pars:
-                try:
-                    img = Image.open(os.path.join(self.input_dir,img_name))
-                    img = img.convert('RGB')
-                    img = self.transform(img).to(self.device)
-                    img = img.unsqueeze(0)
-                    output = self.model(img)
-                    pars.set_description(f"Processing {img_name.split('.')[0]} {output[0][1]:.3f}")
-                    self.set_label(img_name, output, self.threshold)
-                except Exception as e:
-                    pass
+    def eval(self, img_name : str, pbar : tqdm):
+        try:
+            with Image.open(os.path.join(self.input_dir,img_name)) as img:
+                img = img.resize((224, 224))
+                img = img.convert('RGB')
+                img = self.transform(img).to(self.device)
+                img : torch.Tensor = img.unsqueeze(0)
+                output = self.model(img)
+                pbar.set_description(f"Processing {img_name.split('.')[0]} {output[0][1]:.3f}")
+                self.set_label(img_name, output, self.threshold)
+        except Exception as e:
+            print(e)
+    def eval_imgs(self):
+        with tqdm(self.input_img_list, mininterval=0) as pbar, \
+            torch.no_grad():
+            for img_name in pbar:
+                self.eval(img_name, pbar)
+
+
     def copy(self):
             for value in set(self.img_label.values()):
                 os.makedirs(os.path.join(self.output_dir, value), exist_ok=True)
@@ -68,10 +75,10 @@ class Run():
 def main():
     checkpoint_dir = 'checkpoint'
     output_dir = 'output'
-    input_dir = r'pixiv\bookmark_76021323'
+    input_dir = r'input'
     classes = ['bad', 'good']
     threshold = 0.9
-    only_good = False
+    only_good = True
     _, test_transform = MyDataset().get_transforms()
 
     model_path_list = []
@@ -98,7 +105,7 @@ def main():
             threshold   =   threshold,
             only_good   =   only_good,
         )
-        run.eval()
+        run.eval_imgs()
         run.copy()
 if __name__ == "__main__":
     main()
