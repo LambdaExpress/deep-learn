@@ -111,7 +111,7 @@ def main_download_bybookmark():
 def main_download_byuser():
     try:
         root_dir = 'pixiv' 
-        user_id = '27517'
+        user_id = '37929892'
         include_manga = False
         output_dir = os.path.join(root_dir, user_id)
         os.makedirs(output_dir, exist_ok=True)

@@ -86,7 +86,7 @@ def main() -> None:
         "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36 Edg/113.0.1774.35",
     }
     root_dir = 'gelbooru'
-    tags = 'irokari'
+    tags = 'suzuran_(arknights) '
     tags = GelbooruSpider.parse_tags(tags)
     output_dir = os.path.join(root_dir, tags)
     spider = GelbooruSpider(headers=headers, output_dir=output_dir)

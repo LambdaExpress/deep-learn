@@ -1,4 +1,6 @@
+import asyncio
 import sys
+import aiohttp
 import requests
 from tqdm import tqdm
 import os
@@ -43,7 +45,6 @@ class Spider(object):
                     raise requests.HTTPError(f'Download failed due to network error')
         except Exception:
             self.download(url, file_path, block_size, timeout, max_call_limit - 1)
-
     def thread_pool_download(
             self, 
             urls: list, 
