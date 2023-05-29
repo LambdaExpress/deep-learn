@@ -1,4 +1,3 @@
-import threading
 from PIL import Image
 import pandas as pd
 import torch    
@@ -34,30 +33,49 @@ class Run():
         self.transform = transform
         self.input_dir = input_dir
         self.output_dir = output_dir
-        self.input_img_list = os.listdir(input_dir)
         self.img_output = {}
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model : torch.nn.Module = model.to(self.device)
         self.model.load_state_dict(torch.load(model_path))
         self.model.eval()
-    def eval_img(self, img_name : str, pbar : tqdm):
+    def eval_tensor(self, img_path, tensor : torch.Tensor):
+        output = self.model(tensor)
+        self.add_output(os.path.split(img_path)[-1], output.item())
+    def __process_img(self, img_path):
         try:
-            with Image.open(os.path.join(self.input_dir,img_name)) as img:
-                img = img.resize((224, 224))
-                img = img.convert('RGB')
-                img = self.transform(img).to(self.device)
-                img = img.unsqueeze(0)
-                output : torch.Tensor = self.model(img)
-                pbar.set_description(f"Processing {img_name.split('.')[0]} {output.item():.3f}")
-                self.add_output(img_name, output.item())
-        except Exception as e:
-            pass
-    def eval_imgs(self):
-        with tqdm(self.input_img_list, mininterval=0) as pbar, \
-            torch.no_grad():
-            for img_name in pbar:
-                self.eval_img(img_name, pbar)
+            img = Image.open(img_path)
+            img = img.resize((224, 224))
+            img = img.convert('RGB')
+            img = self.transform(img).to(self.device)
+            img = img.unsqueeze(0)
+            return img, img_path
+        except:
+            return False
+    def eval_imgs(self, n : int = 1000):
+        imgs_path = [os.path.join(self.input_dir, name) 
+                     for name in os.listdir(self.input_dir)]
+        split_img_path = [imgs_path[i:i+n] for i in range(0, len(imgs_path), n)]
+        pbar = tqdm(total=2 * len(imgs_path), desc='Total Process')
+        for _split_img_path in split_img_path:
+            img_tensors_paths = {}
+            with concurrent.futures.ThreadPoolExecutor() as executor, \
+                tqdm(_split_img_path, desc='Generate Tensor', leave=False) as generate_pbar:
+                futures = [executor.submit(self.__process_img, img_path) 
+                           for img_path in _split_img_path]
+                for future in concurrent.futures.as_completed(futures):
+                    result = future.result()
+                    generate_pbar.update()
+                    pbar.update()
+                    if not  result:
+                        continue
+                    img_tensor, img_path = result
+                    img_tensors_paths[img_tensor] = img_path
+            with torch.no_grad(), \
+                tqdm(img_tensors_paths.keys(), leave=False, desc='Process Tensor') as tensor_pbar:
+                for tensor in tensor_pbar:
+                    self.eval_tensor(img_tensors_paths[tensor], tensor)
+                    pbar.update()
     def add_output(self, img_name, output):
         self.img_output[img_name] = output
     def save_label_to_excel(self):
@@ -70,6 +88,9 @@ class Run():
         input_dir = self.input_dir
         good_path = os.path.join(output_dir, 'good')
         bad_path = os.path.join(output_dir, 'bad')
+        os.makedirs(good_path, exist_ok=True)
+        if not self.only_good:
+            os.makedirs(bad_path, exist_ok=True)
         df = pd.read_excel(self.xlsx_path, sheet_name='Sheet1')
         df.loc
         for index in tqdm(range(len(df)), desc = 'Copying'):
@@ -86,8 +107,8 @@ class Run():
 def main():
     checkpoint_dir = 'checkpoint'
     output_dir = 'output'
-    input_dir = r'C:\Users\LambdaExpress\Desktop\deep learn\pixiv\37929892'
-    threshold = 0.99
+    input_dir = r'input'
+    threshold = 0.8
     only_good = True
     xlsx_dir = 'xlsx'
     

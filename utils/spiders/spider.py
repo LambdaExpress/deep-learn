@@ -1,5 +1,6 @@
 import asyncio
 import sys
+import time
 import aiohttp
 import requests
 from tqdm import tqdm
@@ -7,7 +8,7 @@ import os
 import concurrent.futures
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from typing import Callable
+from typing import Any, Callable
 
 
 class Spider(object):
@@ -70,3 +71,46 @@ class Spider(object):
                 finally:
                     if pbar is not None:
                         pbar.update(1)
+    async def download_async(self, url: str, file_path: str, block_size: int, max_call_limit : int) -> None:
+        assert max_call_limit > 0
+        try:
+            async with aiohttp.ClientSession(headers=self.headers) as session:
+                async with session.get(url, proxy = self.proxies['http'], ssl= not self.proxies['https'].startswith('http'), proxy_auth=None) as response:
+                    total_size = int(response.headers.get('content-length', 0))
+                    with tqdm(total=total_size, unit='B', unit_scale=True, leave=False) as progress_bar, \
+                        open(file_path, 'wb') as f:
+                        async for chunk in response.content.iter_chunked(block_size):
+                            f.write(chunk)
+                            progress_bar.update(len(chunk))
+        except:
+            await self.download_async(url, file_path, block_size, max_call_limit - 1)
+    async def download_from_urls_async(self, urls):
+        tasks = [self.download_async(url, 'test.jpg', 1024, 5) for url in urls]
+        n = 10000
+        new_list = [tasks[i:i+n] for i in range(0, len(tasks), n)]
+        with tqdm(tasks, desc='Downloading', leave=False) as pbar:
+            for n in new_list:
+                for future in asyncio.as_completed(n):
+                    await future
+                    pbar.update()
+    async def get_async(
+            self, 
+            url, 
+            fn_response : Callable[[aiohttp.ClientResponse], Any] = \
+                lambda response : response.text(), 
+        ):
+        async with aiohttp.ClientSession(headers=self.headers) as session:
+            async with session.get(url, proxy = self.proxies['http'], ssl= not self.proxies['https'].startswith('http'), proxy_auth=None) as response:
+                return await fn_response(response)
+
+
+async def main():
+    spider = Spider()
+    json_data = await spider.get_async('https://www.pixiv.net/ajax/illust/104541001/pages?lang=zh&version=3ee829105ad0a7e37194df46adcc36788c4cbdda',
+                                       lambda r : r.json())
+    urls = [url['urls']['original'] for url in json_data['body']] * 100
+    print(urls)
+    await spider.download_from_urls_async(urls)
+
+if __name__ == '__main__':
+    asyncio.get_event_loop().run_until_complete(main())

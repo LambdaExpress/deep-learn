@@ -60,6 +60,7 @@ class GelbooruSpider(Spider):
         total_img_num = re.findall('pid=(.*?)"', response.text)[-1]
         return int(total_img_num)
     def parse_dataids(self, data_ids : list):
+        data_ids = [data_id for data_id in data_ids if data_id[1:] not in self.imgids]
         return [f'https://gelbooru.com/index.php?page=post&s=view&id={data_id[1:]}' for data_id in data_ids]
     def get_allimgid(self, input_dir) -> set:
         img_ids = set()
@@ -86,23 +87,27 @@ def main() -> None:
         "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36 Edg/113.0.1774.35",
     }
     root_dir = 'gelbooru'
-    tags = 'suzuran_(arknights) '
+    tags = 'all'
     tags = GelbooruSpider.parse_tags(tags)
     output_dir = os.path.join(root_dir, tags)
     spider = GelbooruSpider(headers=headers, output_dir=output_dir)
     total_img_num = spider.get_total_img_num(tags=tags)
     pbar = tqdm(total=total_img_num, desc="Total Image Num", leave=False, smoothing=0.7)
+    view_pbar = tqdm(total=total_img_num, desc="View Image Num", leave=False, smoothing=0.7)
 
     for i in range(1, int(total_img_num / 42) + 2):
         try:
             data_ids = spider.get_page(i, tags=tags)
             data_ids = spider.parse_dataids(data_ids)
+            view_pbar.update(42)
             id_url_dict = spider.thread_pool_urlids(data_ids)
             id_url_dict = spider.parse_id_url_dict(id_url_dict)
-            spider.thread_pool_download(list(id_url_dict.keys()), 
+            urls = [url for url in id_url_dict.keys() if url.split('.')[-1] != 'webm']
+            spider.thread_pool_download(urls, 
                                         output_dir, 
                                         fn_filename=lambda url: f'{id_url_dict[url]}.{url.split(".")[-1]}', 
-                                        pbar=pbar)
+                                        pbar=pbar,
+                                        max_workers=42,)
         except Exception as e:
             print(str(e))
             for _ in tqdm(range(30), desc='Waiting', leave=False):
@@ -111,6 +116,8 @@ def main() -> None:
         finally:
             pbar.n = len(os.listdir(output_dir))
             pbar.refresh()
+    pbar.close()
+    view_pbar.close()
 
 if __name__ == '__main__':
     main()

@@ -1,3 +1,4 @@
+from io import BytesIO
 import sys
 from tqdm import tqdm
 import os
@@ -111,19 +112,19 @@ def main_download_bybookmark():
 def main_download_byuser():
     try:
         root_dir = 'pixiv' 
-        user_id = '37929892'
+        user_id = '37985303'
         include_manga = False
         output_dir = os.path.join(root_dir, user_id)
         os.makedirs(output_dir, exist_ok=True)
 
-        spider = PixivSpider([])
-        page_urls = spider.get_page_byuser(user_id, include_manga)
-        img_urls = spider.thread_pool_imgurls_bypage(page_urls, False)
-        with tqdm(total=len(img_urls), desc="Downloading") as pbar:
-            spider.thread_pool_download(img_urls, output_dir, pbar=pbar)
+        # spider = PixivSpider([])
+        # page_urls = spider.get_page_byuser(user_id, include_manga)
+        # img_urls = spider.thread_pool_imgurls_bypage(page_urls, False)
+        # with tqdm(total=len(img_urls), desc="Downloading") as pbar:
+        #     spider.thread_pool_download(img_urls, output_dir, pbar=pbar)
 
-        # os.system(f'python C:\\Users\\LambdaExpress\\Desktop\\image\\deepbooru_txt.py --path "{os.path.abspath(output_dir)}"')
-        # os.system('cls')
+        os.system(f'python C:\\Users\\LambdaExpress\\Desktop\\image\\deepbooru_txt.py --path "{os.path.abspath(output_dir)}"')
+        os.system('cls')
     finally:
         os.startfile(output_dir)
 def main_download_byrank():
@@ -148,6 +149,7 @@ def main_download_byrank():
             pass
         finally:
             date_generator.next()
+
 if __name__ == '__main__':
     # main_download_byrank()
     main_download_byuser()
