@@ -89,7 +89,7 @@ class PixivSpider(Spider):
         return total_num
 def main_download_bybookmark():
     root_dir = 'pixiv'
-    user_id = '76021323'
+    user_id = '616357'
     bookmark_name = f'bookmark_{user_id}'
     offset = 0
     limit = 100
@@ -112,16 +112,16 @@ def main_download_bybookmark():
 def main_download_byuser():
     try:
         root_dir = 'pixiv' 
-        user_id = '37985303'
+        user_id = '16294170'
         include_manga = False
         output_dir = os.path.join(root_dir, user_id)
         os.makedirs(output_dir, exist_ok=True)
 
-        # spider = PixivSpider([])
-        # page_urls = spider.get_page_byuser(user_id, include_manga)
-        # img_urls = spider.thread_pool_imgurls_bypage(page_urls, False)
-        # with tqdm(total=len(img_urls), desc="Downloading") as pbar:
-        #     spider.thread_pool_download(img_urls, output_dir, pbar=pbar)
+        spider = PixivSpider([])
+        page_urls = spider.get_page_byuser(user_id, include_manga)
+        img_urls = spider.thread_pool_imgurls_bypage(page_urls, False)
+        with tqdm(total=len(img_urls), desc="Downloading", mininterval=0) as pbar:
+            spider.thread_pool_download(img_urls, output_dir, pbar=pbar, stream=False)
 
         os.system(f'python C:\\Users\\LambdaExpress\\Desktop\\image\\deepbooru_txt.py --path "{os.path.abspath(output_dir)}"')
         os.system('cls')

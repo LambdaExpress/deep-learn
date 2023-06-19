@@ -52,10 +52,9 @@ class Run():
             return img, img_path
         except:
             return False
-    def eval_imgs(self, n : int = 1000):
-        imgs_path = [os.path.join(self.input_dir, name) 
-                     for name in os.listdir(self.input_dir)]
-        split_img_path = [imgs_path[i:i+n] for i in range(0, len(imgs_path), n)]
+    def eval_imgs(self, split_threshold : int = 1000):
+        imgs_path = [os.path.join(self.input_dir, name) for name in os.listdir(self.input_dir)]
+        split_img_path = [imgs_path[i:i+split_threshold] for i in range(0, len(imgs_path), split_threshold)]
         pbar = tqdm(total=2 * len(imgs_path), desc='Total Process')
         for _split_img_path in split_img_path:
             img_tensors_paths = {}
@@ -67,7 +66,7 @@ class Run():
                     result = future.result()
                     generate_pbar.update()
                     pbar.update()
-                    if not  result:
+                    if not result:
                         continue
                     img_tensor, img_path = result
                     img_tensors_paths[img_tensor] = img_path
@@ -80,7 +79,7 @@ class Run():
         self.img_output[img_name] = output
     def save_label_to_excel(self):
         a_data = pd.DataFrame(columns=('filename', 'output'))
-        for index, item in enumerate(self.img_output.items()):
+        for index, item in tqdm(enumerate(self.img_output.items()), leave=False, desc='Saving'):
             a_data.loc[index + 1] =  list(item)
         a_data.to_excel(f'{self.xlsx_path}')
     def copy_from_excel(self):
@@ -107,7 +106,7 @@ class Run():
 def main():
     checkpoint_dir = 'checkpoint'
     output_dir = 'output'
-    input_dir = r'input'
+    input_dir = r'pixiv\2342360'
     threshold = 0.8
     only_good = True
     xlsx_dir = 'xlsx'

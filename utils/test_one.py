@@ -16,6 +16,7 @@ import torchvision.transforms as transforms
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 warnings.filterwarnings("ignore")
 from models import resnet18_with_softmax as resnet
+from models import resnet18_with_sigmoid as resnet1
 import requests
 from io import BytesIO
 
@@ -43,7 +44,7 @@ proxies = {
     "http": "http://127.0.0.1:7890",
     "https": "http://127.0.0.1:7890",
 }
-model = resnet.Resnet18WithSoftmax()
+model = resnet1.Resnet18WithSigmoid()
 model = model.cuda()
 model.load_state_dict(torch.load(os.path.join('checkpoint', os.listdir('checkpoint')[0])))
 response = requests.get(url=r'https://i.pximg.net/img-original/img/2023/05/05/21/27/11/107845918_p0.png',
